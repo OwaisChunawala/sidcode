@@ -4,6 +4,9 @@ export type ShapeType = "circle" | "rectangle" | "line" | "semicircle" | "triang
 // Path shape type for user selection
 export type PathShapeType = "circle" | "semicircle" | "triangle" | "rectangle" | "line";
 
+// Animation mode type
+export type AnimationMode = "full" | "stationary" | "drift" | "pulse";
+
 export interface BaseShape {
   type: ShapeType;
   x: number;
@@ -60,6 +63,8 @@ export interface Controls {
   motion: number; // 0-100 - animation speed/intensity
   paletteVariation: number; // 0-100
   pathShape: PathShapeType; // Shape type for text paths
+  animationMode: AnimationMode; // Animation behavior mode
+  flowAngle: number; // 0-360 degrees - direction of flow/drift
 }
 
 // Palette

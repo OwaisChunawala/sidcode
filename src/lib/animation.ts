@@ -1,4 +1,4 @@
-import { RoleShape } from "./types";
+import { RoleShape, AnimationMode } from "./types";
 
 export interface AnimatedShape extends RoleShape {
   // Animation properties
@@ -20,7 +20,8 @@ export function addAnimationProperties(
   chaos: number,
   motion: number,
   seed: number,
-  stationaryMode: boolean = false
+  animationMode: AnimationMode = "full",
+  flowAngle: number = 0
 ): AnimatedShape[] {
   // Simple seeded random
   let s = seed;
@@ -31,6 +32,9 @@ export function addAnimationProperties(
 
   const motionMultiplier = motion / 100;
 
+  // Convert flow angle to radians
+  const flowRad = (flowAngle * Math.PI) / 180;
+
   return shapes.map((shape, i) => {
     // Seed each shape differently
     for (let j = 0; j < i; j++) random();
@@ -39,19 +43,61 @@ export function addAnimationProperties(
     const roleMultiplier =
       shape.role === "anchor" ? 0.3 : shape.role === "accent" ? 0.7 : 1.0;
 
-    // In stationary mode (for text paths), shapes wobble in place with no drift
-    const velocityScale = stationaryMode ? 0 : 1;
+    // Determine velocity and wobble based on animation mode
+    let vx = 0;
+    let vy = 0;
+    let wobbleAmount = 0;
+    let vRotation = 0;
+
+    const baseDrift = 3 * chaosMultiplier * roleMultiplier * motionMultiplier;
+    const baseWobble = 8 + random() * 15 * chaosMultiplier * motionMultiplier;
+
+    switch (animationMode) {
+      case "full":
+        // Full animation: wobble + drift + pulse
+        vx = (random() - 0.5) * baseDrift;
+        vy = (random() - 0.5) * baseDrift;
+        wobbleAmount = baseWobble;
+        vRotation = (random() - 0.5) * 3 * chaosMultiplier * roleMultiplier * motionMultiplier;
+        break;
+
+      case "stationary":
+        // Wobble in place, no drift (good for text readability)
+        vx = 0;
+        vy = 0;
+        wobbleAmount = baseWobble * 0.6; // Reduced wobble
+        vRotation = (random() - 0.5) * 0.5 * chaosMultiplier * roleMultiplier * motionMultiplier;
+        break;
+
+      case "drift":
+        // Slow directional movement, no wobble
+        // Bias toward flowAngle direction with some randomness
+        const flowBias = 0.7; // How much flow affects direction
+        vx = baseDrift * (Math.cos(flowRad) * flowBias + (random() - 0.5) * (1 - flowBias));
+        vy = baseDrift * (Math.sin(flowRad) * flowBias + (random() - 0.5) * (1 - flowBias));
+        wobbleAmount = 0;
+        vRotation = (random() - 0.5) * 0.3 * chaosMultiplier * roleMultiplier * motionMultiplier;
+        break;
+
+      case "pulse":
+        // Size pulsing only, no movement
+        vx = 0;
+        vy = 0;
+        wobbleAmount = 0;
+        vRotation = 0;
+        break;
+    }
 
     const animated: AnimatedShape = {
       ...shape,
-      vx: (random() - 0.5) * 3 * chaosMultiplier * roleMultiplier * motionMultiplier * velocityScale,
-      vy: (random() - 0.5) * 3 * chaosMultiplier * roleMultiplier * motionMultiplier * velocityScale,
-      vRotation: (random() - 0.5) * 3 * chaosMultiplier * roleMultiplier * motionMultiplier * (stationaryMode ? 0.3 : 1),
+      vx,
+      vy,
+      vRotation,
       pulsePhase: random() * Math.PI * 2,
       pulseSpeed: (0.02 + random() * 0.04) * motionMultiplier,
       wobblePhase: random() * Math.PI * 2,
       wobbleSpeed: (0.015 + random() * 0.03) * motionMultiplier,
-      wobbleAmount: (stationaryMode ? 4 : 8) + random() * (stationaryMode ? 8 : 15) * chaosMultiplier * motionMultiplier,
+      wobbleAmount,
     };
 
     // Store original sizes for pulsing

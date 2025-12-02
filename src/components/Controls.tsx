@@ -1,6 +1,6 @@
 "use client";
 
-import { Controls as ControlsType, Palette, CanvasPreset, PathShapeType } from "@/lib/types";
+import { Controls as ControlsType, Palette, CanvasPreset, PathShapeType, AnimationMode } from "@/lib/types";
 import { palettes, canvasPresets } from "@/lib/palettes";
 import { ControlSlider } from "./ControlSlider";
 
@@ -107,6 +107,65 @@ export function Controls({
           onChange={(v) => updateControl("motion", v)}
         />
       </div>
+
+      {/* Animation Mode */}
+      <div className="space-y-2">
+        <label className="text-sm text-neutral-300">Animation Mode</label>
+        <div className="grid grid-cols-4 gap-1">
+          {(["full", "stationary", "drift", "pulse"] as AnimationMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => onControlsChange({ ...controls, animationMode: mode })}
+              className={`p-2 rounded-lg text-xs transition-colors capitalize ${
+                controls.animationMode === mode
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              }`}
+              title={
+                mode === "full" ? "Wobble + drift + pulse" :
+                mode === "stationary" ? "Wobble in place" :
+                mode === "drift" ? "Directional movement" :
+                "Size pulsing only"
+              }
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Flow Direction - only show when drift mode is active */}
+      {controls.animationMode === "drift" && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm text-neutral-300">Flow Direction</label>
+            <span className="text-xs text-neutral-500">{controls.flowAngle}°</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Visual angle indicator */}
+            <div className="w-10 h-10 rounded-full border border-neutral-700 flex items-center justify-center relative">
+              <div
+                className="absolute w-4 h-0.5 bg-white origin-left"
+                style={{
+                  transform: `rotate(${controls.flowAngle}deg)`,
+                  left: '50%',
+                  top: '50%',
+                  marginTop: '-1px'
+                }}
+              />
+              <div className="w-1.5 h-1.5 bg-white rounded-full" />
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={360}
+              value={controls.flowAngle}
+              onChange={(e) => onControlsChange({ ...controls, flowAngle: Number(e.target.value) })}
+              className="flex-1 h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Palette selector */}
       <div className="space-y-2">

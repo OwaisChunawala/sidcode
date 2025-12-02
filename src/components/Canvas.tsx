@@ -44,9 +44,15 @@ export function Canvas({
       text,
     });
 
-    // Use stationary mode for text paths so shapes wobble in place
-    const isTextMode = text && text.trim().length > 0;
-    shapesRef.current = addAnimationProperties(baseShapes, controls.chaos, controls.motion, seed, isTextMode);
+    // Use animation mode from controls
+    shapesRef.current = addAnimationProperties(
+      baseShapes,
+      controls.chaos,
+      controls.motion,
+      seed,
+      controls.animationMode,
+      controls.flowAngle
+    );
 
     // Full clear canvas when shapes regenerate
     const canvas = canvasRef.current;

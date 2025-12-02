@@ -14,6 +14,8 @@ const defaultControls: ControlsType = {
   motion: 60,
   paletteVariation: 30,
   pathShape: "circle",
+  animationMode: "full",
+  flowAngle: 0,
 };
 
 export default function Home() {

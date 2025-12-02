@@ -42,8 +42,12 @@ function createShapeAtPoint(
   shapeType: PathShapeType,
   color: string,
   rotation: number,
-  nextPoint?: { x: number; y: number }
+  nextPoint?: { x: number; y: number },
+  flowAngle?: number // Optional flow angle for orienting shapes in drift mode
 ): Shape {
+  // Convert flow angle to radians if provided
+  const flowRad = flowAngle !== undefined ? (flowAngle * Math.PI) / 180 : undefined;
+
   switch (shapeType) {
     case "circle":
       return createCircle(x, y, size, {
@@ -51,14 +55,18 @@ function createShapeAtPoint(
         rotation,
       });
     case "semicircle":
+      // Orient semicircle toward flow direction if available
+      const semiRotation = flowRad !== undefined ? flowAngle! : rotation;
       return createSemicircle(x, y, size, {
         fill: color,
-        rotation,
+        rotation: semiRotation,
       });
     case "triangle":
+      // Orient triangle toward flow direction if available
+      const triRotation = flowRad !== undefined ? flowAngle! : rotation;
       return createTriangle(x, y, size * 2, {
         fill: color,
-        rotation,
+        rotation: triRotation,
       });
     case "rectangle":
       return createRectangle(x, y, size * 1.8, size * 1.8, {
@@ -66,10 +74,12 @@ function createShapeAtPoint(
         rotation,
       });
     case "line":
-      // Lines point toward the next point on the path (or random if none)
-      const angle = nextPoint
-        ? Math.atan2(nextPoint.y - y, nextPoint.x - x)
-        : rotation * (Math.PI / 180);
+      // Lines point toward flow direction, next point on path, or use rotation
+      const angle = flowRad !== undefined
+        ? flowRad
+        : nextPoint
+          ? Math.atan2(nextPoint.y - y, nextPoint.x - x)
+          : rotation * (Math.PI / 180);
       const length = size * 2.5;
       return createLine(x, y, x + Math.cos(angle) * length, y + Math.sin(angle) * length, {
         stroke: color,
@@ -96,9 +106,12 @@ function generateTextComposition(config: GeneratorConfig): RoleShape[] {
 
   if (points.length === 0) return shapes;
 
-  // Uniform size based on Scale slider
+  // Uniform size based on Scale slider (extended range for smaller shapes)
   const baseSize = Math.min(width, height) * 0.025;
-  const size = baseSize * (0.5 + (controls.scale / 100) * 1.5);
+  const size = baseSize * (0.1 + (controls.scale / 100) * 2.0);
+  // At scale=0: size = baseSize * 0.1 (10% - very small)
+  // At scale=50: size = baseSize * 1.1
+  // At scale=100: size = baseSize * 2.1
 
   // Chaos affects offset from path
   const chaosOffset = (controls.chaos / 100) * size * 2;
@@ -130,7 +143,10 @@ function generateTextComposition(config: GeneratorConfig): RoleShape[] {
     // Get next point for line direction
     const nextPoint = i < points.length - 1 ? points[i + 1] : undefined;
 
-    const shape = createShapeAtPoint(x, y, size, shapeType, color, rotation, nextPoint);
+    // Pass flow angle only when in drift mode for shape orientation
+    const orientFlowAngle = controls.animationMode === "drift" ? controls.flowAngle : undefined;
+
+    const shape = createShapeAtPoint(x, y, size, shapeType, color, rotation, nextPoint, orientFlowAngle);
     shapes.push({ ...shape, role: "anchor" });
   }
 
